@@ -200,6 +200,12 @@ def test_crymat():
     with pytest.raises(EmptyMaterialError):
         crymat = CryMat(raw=verkey, code='')
 
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code='')
+
     crymat = CryMat(raw=verkey)
     assert crymat.raw == verkey
     assert crymat.code == CryOneDex.Ed25519N
