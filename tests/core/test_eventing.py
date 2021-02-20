@@ -18,7 +18,7 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter, Seqner
+from keri.core.coring import CryMat, CryCounter, Seqner, Salter
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
@@ -36,18 +36,19 @@ from keri.core.eventing import TraitDex, LastEstLoc
 from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
-                                delcept, deltate)
+                                delcept, deltate, messagize)
 from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
+
+from keri.base.keeping import Manager, openKeep
 
 from keri.help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
 
 
-
-def test_decouple():
+def test_decouplet():
     """
     test decouple function
     """
@@ -109,6 +110,7 @@ def test_detriple():
     assert cigar.qb64b == sig
 
     """end test"""
+
 
 def test_dequadruple():
     """
@@ -213,6 +215,7 @@ def test_lastestloc():
 
     """End Test """
 
+
 def test_seals():
     """
     Test seal namedtuples
@@ -255,6 +258,7 @@ def test_seals():
     assert seal._fields == ('i', 's', 't', 'p')
 
     """End Test """
+
 
 def test_keyeventfuncs():
     """
@@ -446,9 +450,31 @@ def test_keyeventfuncs():
                            b'_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
     assert serderR.dig == 'EfBbEpSIXiLJuLcTg-MYX2OnrVmIULiut6VcBqDYkkt4'
 
-
     """ Done Test """
 
+
+def test_messagize():
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKeep(name="edy") as kpr:
+        # Init key pair manager
+        mgr = Manager(keeper=kpr, salt=salter.qb64)
+
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="")
+
+        serder = incept(keys=[verfers[0].qb64], code=CryOneDex.Blake3_256)
+
+        sigers = mgr.sign(ser=serder.raw, verfers=verfers)
+
+        msg = messagize(serder, sigers)
+        print(msg)
+
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsrvj'
+                                b'pcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1DhI-z'
+                                b'qkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-AABAAZqE8BI'
+                                b'Y0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QH'
+                                b'vy11Eon5bUvXBQ')
+
+    """ Done Test """
 
 
 def test_kever():
@@ -463,15 +489,15 @@ def test_kever():
     with openDB() as db:  # Transferable case
         # Setup inception key event dict
         # create current key
-        sith = 1  #  one signer
-        skp0 = Signer()  #  original signing keypair transferable default
+        sith = 1  # one signer
+        skp0 = Signer()  # original signing keypair transferable default
         assert skp0.code == CryOneDex.Ed25519_Seed
         assert skp0.verfer.code == CryOneDex.Ed25519
         keys = [skp0.verfer.qb64]
 
         # create next key
-        nxtsith = "1" #  one signer
-        skp1 = Signer()  #  next signing keypair transferable is default
+        nxtsith = "1"  # one signer
+        skp1 = Signer()  # next signing keypair transferable is default
         assert skp1.code == CryOneDex.Ed25519_Seed
         assert skp1.verfer.code == CryOneDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
@@ -479,19 +505,19 @@ def test_kever():
         nexter = Nexter(sith=nxtsith, keys=nxtkeys)
         nxt = nexter.qb64  # transferable so nxt is not empty
 
-        sn = 0  #  inception event so 0
+        sn = 0  # inception event so 0
         toad = 0  # no witnesses
-        nsigs = 1  #  one attached signature unspecified index
+        nsigs = 1  # one attached signature unspecified index
 
         ked0 = dict(v=Versify(kind=Serials.json, size=0),
-                    i="",  # qual base 64 prefix
+                    i="",  # qualified base 64 prefix
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     t=Ilks.icp,
-                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
-                    k=keys,  # list of signing keys each qual Base64
-                    n=nxt,  # hash qual Base64
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qualified Base64
+                    n=nxt,  # hash qualified Base64
                     wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-                    w=[],  # list of qual Base64 may be empty
+                    w=[],  # list of qualified Base64 may be empty
                     c=[],  # list of config ordered mappings may be empty
                    )
 
@@ -515,18 +541,65 @@ def test_kever():
 
         kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # no error
 
+    # Test Invalid Message Type(t) In ked
+    with openDB() as db:  # Transferable case
+        # Setup inception key event dict
+        # create current key
+        sith = 1  # one signer
+        skp0 = Signer()  # original signing keypair transferable default
+        keys = [skp0.verfer.qb64]
+
+        # create next key
+        nxtsith = "1"  # one signer
+        skp1 = Signer()  # next signing keypair transferable is default
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest
+        nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+        nxt = nexter.qb64  # transferable so nxt is not empty
+
+        sn = 0  # inception event so 0
+        toad = 0  # no witnesses
+
+        ked0 = dict(
+            v=Versify(kind=Serials.json, size=0),
+            i="",  # qualified base 64 prefix
+            s="{:x}".format(sn),  # hex string no leading zeros lowercase
+            t="",  # string message type. icp, rot, ixn, dip, drt
+            kt="{:x}".format(sith),  # hex string no leading zeros lowercase
+            k=keys,  # list of signing keys each qualified Base64
+            n=nxt,  # hash qualified Base64
+            wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+            w=[],  # list of qualified Base64 may be empty
+            c=[],  # list of config ordered mappings may be empty
+        )
+
+        # Derive AID from ked
+        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
+
+        # update ked with pre
+        ked0["i"] = aid0.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], baser=db)
+
     with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict
         # create current key
-        sith = 1  #  one signer
-        skp0 = Signer(transferable=False)  #  original signing keypair non-transferable
+        sith = 1  # one signer
+        skp0 = Signer(transferable=False)  # original signing keypair non-transferable
         assert skp0.code == CryOneDex.Ed25519_Seed
         assert skp0.verfer.code == CryOneDex.Ed25519N
         keys = [skp0.verfer.qb64]
 
         # create next key Error case
-        nxtsith = "1" #  one signer
-        skp1 = Signer()  #  next signing keypair transferable is default
+        nxtsith = "1" # one signer
+        skp1 = Signer()  # next signing keypair transferable is default
         assert skp1.code == CryOneDex.Ed25519_Seed
         assert skp1.verfer.code == CryOneDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
@@ -534,15 +607,15 @@ def test_kever():
         nexter = Nexter(sith=nxtsith, keys=nxtkeys)
         nxt = nexter.qb64  # nxt is not empty so error
 
-        sn = 0  #  inception event so 0
+        sn = 0  # inception event so 0
         toad = 0  # no witnesses
-        nsigs = 1  #  one attached signature unspecified index
+        nsigs = 1  # one attached signature unspecified index
 
         ked0 = dict(v=Versify(kind=Serials.json, size=0),
                     i="",  # qual base 64 prefix
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     t=Ilks.icp,
-                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
                     n=nxt,  # hash qual Base64
                     wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -573,17 +646,17 @@ def test_kever():
         with pytest.raises(ValidationError):
             kever = Kever(serder=tser0, sigers=[tsig0], baser=db)
 
-        #retry with valid empty nxt
+        # retry with valid empty nxt
         nxt = ""  # nxt is empty so no error
-        sn = 0  #  inception event so 0
+        sn = 0  # inception event so 0
         toad = 0  # no witnesses
-        nsigs = 1  #  one attached signature unspecified index
+        nsigs = 1  # one attached signature unspecified index
 
         ked0 = dict(v=Versify(kind=Serials.json, size=0),
                     i="",  # qual base 64 prefix
                     s="{:x}".format(sn),  # hex string no leading zeros lowercase
                     t=Ilks.icp,
-                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                    kt="{:x}".format(sith),  # hex string no leading zeros lowercase
                     k=keys,  # list of signing keys each qual Base64
                     n=nxt,  # hash qual Base64
                     wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -611,7 +684,6 @@ def test_kever():
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # valid so no error
-
 
     """ Done Test """
 
@@ -648,7 +720,7 @@ def test_keyeventsequence_0():
     signers = [Signer(qb64=secret) for secret in secrets]  # faster
     assert [signer.qb64 for signer in signers] == secrets
 
-    pubkeys = [signer.verfer.qb64 for  signer in  signers]
+    pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == [
                         'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
                         'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
@@ -662,7 +734,7 @@ def test_keyeventsequence_0():
 
     with openDB(name="controller") as conlgr:
 
-        event_digs = [] # list of event digs in sequence
+        event_digs = []  # list of event digs in sequence
 
         # Event 0  Inception Transferable (nxt digest not empty)
         keys0 = [signers[0].verfer.qb64]
@@ -887,6 +959,7 @@ def test_keyeventsequence_0():
 
     """ Done Test """
 
+
 def test_keyeventsequence_1():
     """
     Test generation of a sequence of key events
@@ -999,6 +1072,7 @@ def test_keyeventsequence_1():
         assert db_digs == event_digs
 
     """ Done Test """
+
 
 def test_kevery():
     """
@@ -1637,6 +1711,7 @@ def test_recovery():
 
     """ Done Test """
 
+
 def test_receipt():
     """
     Test event receipt message and attached couplets
@@ -1694,7 +1769,7 @@ def test_receipt():
         kes = bytearray()
         sn = esn = 0  # sn and last establishment sn = esn
 
-        #create receipt msg stream
+        # create receipt msg stream
         res = bytearray()
 
         # Event 0  Inception Transferable (nxt digest not empty)
@@ -1927,6 +2002,7 @@ def test_receipt():
 
     """ Done Test """
 
+
 def test_direct_mode():
     """
     Test direct mode with transferable validator event receipts
@@ -1999,9 +2075,7 @@ def test_direct_mode():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
         #  create serialized message
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(coeSerder, [siger])
         assert cmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5t'
                                  b'zHn2N46wRCG_ZOoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIy'
@@ -2029,9 +2103,7 @@ def test_direct_mode():
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
         #  create serialized message
-        vmsg = bytearray(valSerder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(valSerder, [siger])
         assert vmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY'
                                  b'_qrIZIicQg","s":"0","t":"icp","kt":"1","k":["D8KY1sKmgyjAiUDdUBP'
                                  b'NPyrSz_ad_Qf9yzhDNZlEKiMc"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-i'
@@ -2073,9 +2145,7 @@ def test_direct_mode():
         assert siger.qb64 == 'AAb6S-RXeAqUKl8UuNwYpiaFARhMj-95elxmr7uNU8m7buVSPVLbTWcQYfI_04HoP_A_fvlU_b099fiEJyDSA2Cg'
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        rmsg = bytearray(reserder.raw)
-        rmsg.extend(counter.qb64b)
-        rmsg.extend(siger.qb64b)
+        rmsg = messagize(reserder, [siger])
         assert rmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"0","t":"vrc","d":"EEnwxEm5Bg5s5aTLsgQCNpubIYzwl'
                                  b'vMwZIzdOM0Z3u7o","a":{"i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qr'
@@ -2129,9 +2199,7 @@ def test_direct_mode():
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
         # create message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"a","t":"vrc","d":"EiRvswmIbhsbdz95TuwZSZkKL5jLn'
                                  b'R-kM0qwQ6PXH0hs","a":{"i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qr'
@@ -2178,9 +2246,7 @@ def test_direct_mode():
         assert siger.qb64 == 'AAZqxNTt_LDZnmwEIaJX0cK9VKkCGq1UieEx6881MKKOtlRirvs_4pzFgmw3aRwAaIM2XV0biQ7xHeOoXglluDCA'
 
         # create receipt message
-        cmsg = bytearray(reserder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(reserder, [siger])
         assert cmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY'
                                  b'_qrIZIicQg","s":"0","t":"vrc","d":"EGFSGYH2BjtKwX1osO0ZvLw98nuuo'
                                  b'3lMkveRoPIJzupo","a":{"i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6'
@@ -2221,9 +2287,7 @@ def test_direct_mode():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
         #  create serialized message
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(coeSerder, [siger])
         assert cmsg == bytearray(b'{"v":"KERI10JSON000122_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"1","t":"rot","p":"EEnwxEm5Bg5s5aTLsgQCNpubIYzwl'
                                  b'vMwZIzdOM0Z3u7o","kt":"1","k":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfA'
@@ -2269,9 +2333,7 @@ def test_direct_mode():
         assert siger.qb64 == 'AAb1BJLLTkcTlefF1DOPKiOixLgQqnqxRsqEqGaaADLNwQ-uDeb2nNTQBB6SeclaihimPg9QwLnulUbdgYxI5ADg'
 
         # val create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"1","t":"vrc","d":"Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy'
                                  b'9K1zZ5BavqGDKnk","a":{"i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qr'
@@ -2311,9 +2373,7 @@ def test_direct_mode():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
         # create msg
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(coeSerder, [siger])
         assert cmsg == bytearray(b'{"v":"KERI10JSON000098_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"2","t":"ixn","p":"Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy'
                                  b'9K1zZ5BavqGDKnk","a":[]}-AABAARxj7iqT5m3wQIPOfCPFkeGEw1j5QY-lXbR'
@@ -2356,9 +2416,7 @@ def test_direct_mode():
         assert siger.qb64 == 'AA71XY3Y7gt3FQ3RkRDN2JN5wsKVFSqxc55yBl3PecKEpSSn_tjjtKxhvZZgWtvUxHiaSt94h8huBZ0jVdWeM6DA'
 
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYy'
                                  b'B-6n4WDi7w","s":"2","t":"vrc","d":"E-5RimdY_OWoreR-Z-Q5G81-I4tjA'
                                  b'SJCaP_MqkBbtM2w","a":{"i":"EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qr'
@@ -2491,14 +2549,12 @@ def test_direct_mode_cbor_mgpk():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # return Siger if index
 
         #  create serialized message
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
-        assert cmsg ==  bytearray(b'\xaaavqKERI10CBOR0000c0_aix,EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5Cy'
-                                  b'axJvUasa0atcicpbkta1ak\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWT'
-                                  b'OunRAanx,EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUbwta0aw'
-                                  b'\x80ac\x80-AABAAc47yJQzrwCZpqluZC-J8IhILDaBgogcA8SwRSRxRzKhY2peya5'
-                                  b'E7Swfq4Q30l-UGcqEk3GllaIseiGST80NhDg')
+        cmsg = messagize(coeSerder, [siger])
+        assert cmsg == bytearray(b'\xaaavqKERI10CBOR0000c0_aix,EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5Cy'
+                                 b'axJvUasa0atcicpbkta1ak\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWT'
+                                 b'OunRAanx,EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUbwta0aw'
+                                 b'\x80ac\x80-AABAAc47yJQzrwCZpqluZC-J8IhILDaBgogcA8SwRSRxRzKhY2peya5'
+                                 b'E7Swfq4Q30l-UGcqEk3GllaIseiGST80NhDg')
 
         # create own Coe Kever in  Coe's Kevery
         coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
@@ -2521,9 +2577,7 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(valSerder.raw, index=0)  # return Siger if index
 
         #  create serialized message
-        vmsg = bytearray(valSerder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(valSerder, [siger])
         assert vmsg == bytearray(b'\x8a\xa1v\xb1KERI10MGPK0000c0_\xa1i\xd9,E-5yGMmTDo6Qkr4G36Jy91gz5bF'
                                  b'2y_Ef-s_S0jIfaoOY\xa1s\xa10\xa1t\xa3icp\xa2kt\xa11\xa1k\x91\xd9,D8K'
                                  b'Y1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDx'
@@ -2566,9 +2620,7 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        rmsg = bytearray(reserder.raw)
-        rmsg.extend(counter.qb64b)
-        rmsg.extend(siger.qb64b)
+        rmsg = messagize(reserder, [siger])
         assert rmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EMejbZsIeOI5TTb73MKIVbjkYFU'
                                  b'RM8iREGeX5CyaxJvU\xa1s\xa10\xa1t\xa3vrc\xa1d\xd9,EyAyl33W9ja_wLX85'
                                  b'UrzRnL4KNzlsIKIA7CrD04nVX1w\xa1a\x83\xa1i\xd9,E-5yGMmTDo6Qkr4G36'
@@ -2621,9 +2673,7 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
         # create message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EMejbZsIeOI5TTb73MKIVbjkYFU'
                                  b'RM8iREGeX5CyaxJvU\xa1s\xa1a\xa1t\xa3vrc\xa1d\xd9,Em76-KfV_5y0Qw8uN'
                                  b'pg20X9-eJWwBAivyZwmRLOh_sSI\xa1a\x83\xa1i\xd9,E-5yGMmTDo6Qkr4G36'
@@ -2631,7 +2681,7 @@ def test_direct_mode_cbor_mgpk():
                                  b'nvJhCONuiONwraOPWcgenQBlYI-AABAAiWta7sNV-ZEchQh8sN6FIcxYY8b9-Uc2'
                                  b'pvq8n64SnY-QfPs-tIO3WgMr15LSM-_tFbLxCkkSwQltTu2MdeT7CQ')
 
-        coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
+        coeKevery.processAll(ims=vmsg)  # coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
                                                        sn=10))
@@ -2640,7 +2690,6 @@ def test_direct_mode_cbor_mgpk():
                                         Seqner(sn=valKever.sn).qb64b +
                                         valKever.serder.diger.qb64b +
                                         siger.qb64b)
-
 
         # Send receipt from coe to val
         # create receipt of val's inception
@@ -2670,9 +2719,7 @@ def test_direct_mode_cbor_mgpk():
         siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
 
         # create receipt message
-        cmsg = bytearray(reserder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(reserder, [siger])
         assert cmsg == bytearray(b'\xa6avqKERI10CBOR0000e6_aix,E-5yGMmTDo6Qkr4G36Jy91gz5bF2y_Ef-s_S0jI'
                                  b'faoOYasa0atcvrcadx,EHJmsEzpuzz6QA9aHAnvJhCONuiONwraOPWcgenQBlYIa'
                                  b'a\xa3aix,EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5CyaxJvUasa0adx,EyAyl3'
@@ -2683,7 +2730,7 @@ def test_direct_mode_cbor_mgpk():
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate send to val of coe's receipt of val's inception message
-        valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
+        valKevery.processAll(ims=cmsg)  # coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
@@ -2713,9 +2760,7 @@ def test_direct_mode_cbor_mgpk():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
         #  create serialized message
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(coeSerder, [siger])
         assert cmsg == bytearray(b'\xacavqKERI10CBOR0000f5_aix,EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5Cy'
                                  b'axJvUasa1atcrotapx,EyAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1wb'
                                  b'kta1ak\x81x,DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIanx,E-dapdc'
@@ -2761,9 +2806,7 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
 
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EMejbZsIeOI5TTb73MKIVbjkYFU'
                                  b'RM8iREGeX5CyaxJvU\xa1s\xa11\xa1t\xa3vrc\xa1d\xd9,ER73b7reENuBahMJs'
                                  b'MTLbeyyNPsfTRzKRWtJ3ytmInvw\xa1a\x83\xa1i\xd9,E-5yGMmTDo6Qkr4G36'
@@ -2775,7 +2818,7 @@ def test_direct_mode_cbor_mgpk():
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
+        coeKevery.processAll(ims=vmsg)  # coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -2790,7 +2833,7 @@ def test_direct_mode_cbor_mgpk():
                                     b'ahmzMSI8YIeMIXEB6426jlHOnOMTTSLngnnOuZFqn8lHjHDA')
 
         # Next Event Coe Interaction
-        csn += 1  #  do not increment esn
+        csn += 1  # do not increment esn
         assert csn == 2
         assert cesn == 1
         coeSerder = interact(pre=coeKever.prefixer.qb64,
@@ -2804,9 +2847,7 @@ def test_direct_mode_cbor_mgpk():
         siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
         # create msg
-        cmsg = bytearray(coeSerder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
+        cmsg = messagize(coeSerder, [siger])
         assert cmsg == bytearray(b'\xa6avqKERI10CBOR000082_aix,EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5Cy'
                                  b'axJvUasa2atcixnapx,ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvwa'
                                  b'a\x80-AABAAblowxEBYCMzh5nTKzt0foP9fRe3zoFhIvWNlah7379IttdS92sJYCANN'
@@ -2848,9 +2889,7 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
 
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg = messagize(reserder, [siger])
         assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EMejbZsIeOI5TTb73MKIVbjkYFU'
                                  b'RM8iREGeX5CyaxJvU\xa1s\xa12\xa1t\xa3vrc\xa1d\xd9,EA4vCeJswIBJlO3Rq'
                                  b'E-wsE72Vt3wAceJ_LzqKvbDtBSY\xa1a\x83\xa1i\xd9,E-5yGMmTDo6Qkr4G36'
@@ -2915,7 +2954,7 @@ def test_process_nontransferable():
     """
 
     # Ephemeral (Nontransferable) case
-    skp0 = Signer(transferable=False)  #  original signing keypair non transferable
+    skp0 = Signer(transferable=False)  # original signing keypair non transferable
     assert skp0.code == CryOneDex.Ed25519_Seed
     assert skp0.verfer.code == CryOneDex.Ed25519N
 
@@ -2925,11 +2964,11 @@ def test_process_nontransferable():
 
     # Ephemeral may be used without inception event
     # but when used with inception event must be compatible event
-    sn = 0  #  inception event so 0
-    sith = 1 #  one signer
+    sn = 0  # inception event so 0
+    sith = 1  # one signer
     nxt = ""  # non-transferable so nxt is empty
     toad = 0  # no witnesses
-    nsigs = 1  #  one attached signature unspecified index
+    nsigs = 1  # one attached signature unspecified index
 
     ked0 = dict(v=Versify(kind=Serials.json, size=0),
                 i=aid0.qb64,  # qual base 64 prefix
@@ -2988,6 +3027,7 @@ def test_process_nontransferable():
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
+
 def test_process_transferable():
     """
     Test process of generating and validating key event messages
@@ -2995,15 +3035,15 @@ def test_process_transferable():
     # Transferable case
     # Setup inception key event dict
     # create current key
-    sith = 1  #  one signer
-    skp0 = Signer()  #  original signing keypair transferable default
+    sith = 1  # one signer
+    skp0 = Signer()  # original signing keypair transferable default
     assert skp0.code == CryOneDex.Ed25519_Seed
     assert skp0.verfer.code == CryOneDex.Ed25519
     keys = [skp0.verfer.qb64]
 
     # create next key
-    nxtsith = "1" #  one signer
-    skp1 = Signer()  #  next signing keypair transferable is default
+    nxtsith = "1" # one signer
+    skp1 = Signer()  # next signing keypair transferable is default
     assert skp1.code == CryOneDex.Ed25519_Seed
     assert skp1.verfer.code == CryOneDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
@@ -3011,9 +3051,9 @@ def test_process_transferable():
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
     nxt = nexter.qb64  # transferable so next is not empty
 
-    sn = 0  #  inception event so 0
+    sn = 0  # inception event so 0
     toad = 0  # no witnesses
-    nsigs = 1  #  one attached signature unspecified index
+    nsigs = 1  # one attached signature unspecified index
 
     ked0 = dict(v=Versify(kind=Serials.json, size=0),
                 i="",  # qual base 64 prefix
@@ -3026,7 +3066,6 @@ def test_process_transferable():
                 w=[],  # list of qual Base64 may be empty
                 c=[],
                )
-
 
     # Derive AID from ked
     aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
@@ -3077,11 +3116,11 @@ def test_process_transferable():
     raid0 = Prefixer(qb64=rser0.pre)
     assert raid0.verify(ked=rser0.ked)
 
-    #verify nxt digest from event is still valid
+    # verify nxt digest from event is still valid
     rnxt1 = Nexter(qb64=rser0.ked["n"])
     assert rnxt1.verify(sith=nxtsith, keys=nxtkeys)
-    """ Done Test """
 
+    """ Done Test """
 
 
 def test_process_manual():
@@ -3140,7 +3179,7 @@ def test_process_manual():
     toad = 0
     index = 0
 
-    #create key event dict
+    # create key event dict
     ked0 = dict(v=Versify(kind=Serials.json, size=0),
                 i=aidmat.qb64,  # qual base 64 prefix
                 s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -3169,7 +3208,7 @@ def test_process_manual():
 
     assert txsrdr.dig == txdigmat.qb64
 
-    sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
+    sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  # sigkey = seed + verkey
     assert len(sig0raw) == 64
 
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
@@ -3182,9 +3221,9 @@ def test_process_manual():
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 318  #  230 + 88
+    assert len(msgb) == 318  # 230 + 88
 
-    #  Recieve side
+    # Receive side
     rxsrdr = Serder(raw=msgb)
     assert rxsrdr.size == txsrdr.size
     assert rxsrdr.ked == ked0
@@ -3201,13 +3240,12 @@ def test_process_manual():
 
     rxverqb64 = rxsrdr.ked["k"][index]
     rxvermat = CryMat(qb64=rxverqb64)
-    assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
+    assert rxvermat.qb64 == rxaidmat.qb64  # basic derivation same
 
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
     assert not result  # None if verifies successfully else raises ValueError
+
     """ Done Test """
-
-
 
 
 if __name__ == "__main__":
