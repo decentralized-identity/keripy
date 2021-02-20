@@ -188,8 +188,6 @@ def dequintuple(quintuple):
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
-
-
 def incept(keys,
            sith=None,
            nxt="",
@@ -246,6 +244,7 @@ def incept(keys,
 
     cnfg = cnfg if cnfg is not None else []
 
+    # see https://github.com/decentralized-identity/keri/blob/master/kids/kid0003.md#element-labels
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -584,7 +583,6 @@ def delcept(keys,
     return Serder(ked=ked)  # return serialized ked
 
 
-
 def deltate(pre,
            keys,
            dig,
@@ -651,7 +649,7 @@ def deltate(pre,
     if len(cutset) != len(cuts):
         raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
 
-    if (witset & cutset) != cutset:  #  some cuts not in wits
+    if (witset & cutset) != cutset:  # some cuts not in wits
         raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
 
     adds = adds if adds is not None else []
@@ -686,14 +684,13 @@ def deltate(pre,
             raise ValueError("Invalid toad = {} for resultant wits = {}"
                              "".format(toad, list(newitset)))
 
-
     data = data if data is not None else []
 
     ked = dict(v=vs,  # version string
                i=pre,  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               p=dig,  #  qb64 digest of prior event
+               p=dig,  # qb64 digest of prior event
                kt="{:x}".format(sith), # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
@@ -705,6 +702,26 @@ def deltate(pre,
                )
 
     return Serder(ked=ked)  # return serialized ked
+
+
+def messagize(serder, sigers):
+    """
+    Attaches signatures to a KERI event
+    Parameters:
+        serder: Serder instance containing the event
+        sigers: Sigers[]|Cigars[] array of signatures
+
+    Returns: bytearray KERI event message
+
+    """
+    msg = bytearray(serder.raw)
+    count = len(sigers)
+    counter = SigCounter(count=count)
+    msg.extend(counter.qb64b)
+    for siger in sigers:
+        msg.extend(siger.qb64b)
+
+    return msg
 
 
 class Kever:
@@ -751,6 +768,7 @@ class Kever:
         Parameters:
             serder is Serder instance of inception event
             sigers is list of SigMat instances of signatures of event
+            baser is reference to db
             establishOnly is boolean trait to indicate establish only event
 
         """
@@ -821,7 +839,7 @@ class Kever:
         ked = serder.ked
 
         self.verfers = serder.verfers  # converts keys to verifiers
-        self.tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        self.tholder = Tholder(sith=ked["kt"])  # parse sith into Tholder instance
         if len(self.verfers) < self.tholder.size:
             raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
@@ -1176,7 +1194,6 @@ class Kever:
         return indices
 
 
-
     def validateSigs(self, serder, sigers, verfers, tholder):
         """
         Validate signatures by validating sith indexs and verifying signatures
@@ -1276,7 +1293,7 @@ class Kever:
         sn = serder.ked["s"]
         dig = serder.dig
         found = False  # find event seal of delegated event in delegating data
-        for dseal in dserder.ked["a"]:  #  find delegating seal anchor
+        for dseal in dserder.ked["a"]:  # find delegating seal anchor
             if ("i" in dseal and dseal["i"] == pre and
                 "s" in dseal and dseal["s"] == sn and
                 "d" in dseal and serder.compare(dig=dseal["d"])):  # dseal["d"] == dig
