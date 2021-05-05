@@ -10,16 +10,16 @@ import lmdb
 
 from keri.core.coring import Diger, Versify, Serials
 from keri.db.dbing import openLMDB, dgKey, snKey
-from keri.vdr.viring import Issuer, regKey, vcKey
+from keri.vdr.viring import Registry, nsKey
 
 
 def test_issuer():
     """
     Test Issuer Class
     """
-    issuer = Issuer()
+    issuer = Registry()
 
-    assert isinstance(issuer, Issuer)
+    assert isinstance(issuer, Registry)
     assert issuer.name == "main"
     assert issuer.temp is False
     assert isinstance(issuer.env, lmdb.Environment)
@@ -34,8 +34,8 @@ def test_issuer():
     assert not issuer.opened
 
     # test not opened on init
-    issuer = Issuer(reopen=False)
-    assert isinstance(issuer, Issuer)
+    issuer = Registry(reopen=False)
+    assert isinstance(issuer, Registry)
     assert issuer.name == "main"
     assert issuer.temp is False
     assert issuer.opened is False
@@ -56,8 +56,8 @@ def test_issuer():
 
     assert isinstance(issuer.tvts, lmdb._Database)
 
-    with openLMDB(cls=Issuer) as issuer:
-        assert isinstance(issuer, Issuer)
+    with openLMDB(cls=Registry) as issuer:
+        assert isinstance(issuer, Registry)
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
@@ -75,7 +75,7 @@ def test_issuer():
     rarb = "BijzaUuRMwh1ivT5BQrqNhbvx82lB-ofrHVHjL3WADbA".encode("utf-8")
 
     #  test with registry inception (vcp) event
-    regk = regKey(ipreb, regb)
+    regk = nsKey([ipreb, regb])
     assert regk == b'DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo:EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0'
     sn = 0
     vs = Versify(kind=Serials.json, size=20)
@@ -91,7 +91,7 @@ def test_issuer():
     vdig = Diger(ser=vcpb)
 
 
-    with openLMDB(cls=Issuer) as issuer:
+    with openLMDB(cls=Registry) as issuer:
         key = dgKey(regk, vdig.qb64b)
 
         assert issuer.getTvt(key) is None
@@ -158,47 +158,35 @@ def test_issuer():
         assert issuer.delTwe(tweKey) is True
         assert issuer.getTwe(tweKey) is None
 
-        quad01 = ("DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo"
-                  "0AAAAAAAAAAAAAAAAAAAAABA"
-                  "rot"
-                  "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
-        quad02 = ("DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo"
-                  "0AAAAAAAAAAAAAAAAAAAAABg"
-                  "rot"
-                  "EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0").encode("utf-8")
-        quad03 = ("DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo"
-                  "0AAAAAAAAAAAAAAAAAAAAABw"
-                  "rot"
-                  "EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc").encode("utf-8")
-        quads = [quad01, quad02, quad03]
+        ooKey = snKey(regk, sn)
+        assert issuer.getOot(ooKey) is None
+        assert issuer.delOot(ooKey) is False
+        assert issuer.putOot(ooKey, val=vdig.qb64b)
+        assert issuer.getOot(ooKey) == vdig.qb64b
+        assert issuer.putOot(ooKey, val=vdig.qb64b) is False
+        assert issuer.setOot(ooKey, val=vdig.qb64b) is True
+        assert issuer.getOot(ooKey) == vdig.qb64b
+        assert issuer.delOot(ooKey) is True
+        assert issuer.getOot(ooKey) is None
+
+        anc01 = ("DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo"
+                 "0AAAAAAAAAAAAAAAAAAAAABA"
+                 "Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4").encode("utf-8")
 
         key = dgKey(regk, vdig.qb64b)
-        assert issuer.getAncs(key) == []
-        assert issuer.cntAncs(key) == 0
-        assert issuer.delAncs(key) is False
-        assert issuer.putAncs(key, vals=[quad01]) is True
-        assert issuer.getAncs(key) == [quad01]
-        assert issuer.cntAncs(key) == 1
-        assert issuer.putAncs(key, vals=[quad01]) is True  # add duplicate
-        assert issuer.cntAncs(key) == 1
-        assert issuer.addAnc(key, quad01) is False
-        assert issuer.addAnc(key, quad02) is True
-        assert issuer.cntAncs(key) == 2
-        assert issuer.putAncs(key, vals=[quad02, quad03]) is True
-        assert issuer.cntAncs(key) == 3
-        assert issuer.delAncs(key) is True
-        assert issuer.getAncs(key) == []
-        for c in quads:
-            assert issuer.addAnc(key, c) is True
-        assert issuer.cntAncs(key) == 3
-        assert issuer.getAncs(key) == [quad01, quad02, quad03]
-        for c in issuer.getAncsIter(key):
-            assert issuer.delAncs(key, c) is True
-        assert issuer.getAncs(key) == []
+        assert issuer.getAnc(key) is None
+        assert issuer.delAnc(key) is False
+        assert issuer.putAnc(key, val=anc01)
+        assert issuer.getAnc(key) == anc01
+        assert issuer.putAnc(key, val=anc01) is False
+        assert issuer.setAnc(key, val=anc01) is True
+        assert issuer.getAnc(key) == anc01
+        assert issuer.delAnc(key) is True
+        assert issuer.getAnc(key) is None
 
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
-        vck = vcKey(ipreb, regb, vcdig)
+        vck = nsKey([ipreb, regb, vcdig])
         assert vck == (b'DYmJApMvMb8mgiG20BPlPcKLWSfNIUCC21DP0i2_BLjo:EOWdT7a7fZwRz0jiZ0DJxZEM3vsNbLDPEUk-ODnif3O0'
                        b':EXvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc')
         sn = 0
