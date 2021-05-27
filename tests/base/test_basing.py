@@ -12,8 +12,9 @@ import pytest
 
 from keri.base import basing, keeping
 from keri.base.basing import Habitat
-from keri.core.coring import Serials
+from keri.core.coring import Serials, Serder
 from keri.db import dbing
+from keri.db.dbing import fnKey, dgKey
 from keri.help import helping
 
 
@@ -60,6 +61,37 @@ def test_habitat_reinitialization():
 
         assert hab.kever.serder.dig != odig
         assert hab.kever.serder.dig == ndig
+
+        hab.db.close(clear=True)
+        hab.ks.close(clear=True)
+    """End Test"""
+
+
+def test_habitat_idempotent_reinitialization():
+    """
+    Test Reinitializing Habitat class
+    """
+    name = "bob-test"
+    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+        basing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+
+    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+        hab = basing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+        hab.rotate()
+
+        key = fnKey(pre=hab.pre, sn=0)
+        dig = hab.db.getFe(key=key)
+        raw = hab.db.getEvt(key=dgKey(pre=hab.pre, dig=dig))
+        serder = Serder(raw=bytes(raw))
+
+        assert serder.ked["t"] == "icp"
+
+        key1 = fnKey(pre=hab.pre, sn=1)
+        dig1 = hab.db.getFe(key=key1)
+        raw1 = hab.db.getEvt(key=dgKey(pre=hab.pre, dig=dig1))
+        serder1 = Serder(raw=bytes(raw1))
+
+        assert serder1.ked["t"] == "rot"
 
         hab.db.close(clear=True)
         hab.ks.close(clear=True)
