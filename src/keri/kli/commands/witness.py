@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+    # -*- encoding: utf-8 -*-
 """
 KERI
 keri.kli.witness module
@@ -51,7 +51,6 @@ def launch(args):
                 ".******\n\n", args.name, args.local)
 
 
-
 def runWitness(name="witness", local=5621, expire=0.0):
     """
     Setup and run one witness
@@ -61,4 +60,3 @@ def runWitness(name="witness", local=5621, expire=0.0):
                                      localPort=local)
 
     directing.runController(doers=doers, expire=expire)
-

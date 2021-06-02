@@ -8,6 +8,10 @@ import argparse
 from keri.app import keeping
 from keri.app.habbing import Habitat
 from keri.db import dbing, basing
+from keri.base import keeping
+from keri.base.basing import Habitat
+from keri.db import dbing
+from keri.kli.common.config import loadConfig
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: incept(args.name, args.file))  # , args.file, args.with_tel
@@ -15,7 +19,19 @@ parser.add_argument('--name', '-n', help='Humane reference')
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="")
 
 
+def witnessConnection(ip):
+    pass
+
+
 def incept(name, file):
+    cfg = loadConfig(file=file)
+
+    if cfg is not None:
+        if len(cfg.witnessList) > 0:
+            print(cfg.witnessList)
+
+            witnessConnection(cfg.witnessList[0])
+
     with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
 
