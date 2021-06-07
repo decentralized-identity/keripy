@@ -11,7 +11,7 @@ class Config:
     """
     name: str  # Alias for prefix
     witnessExpire: Optional[int] = 60  # timeout for witness connection
-    witnessList: Optional[List[str]] = None  # list of witness nodes
+    witnesses: Optional[List[str]] = None  # list of witness nodes
     transferable: Optional[bool] = None  # Use transferable derivation code
 
     def __iter__(self):
