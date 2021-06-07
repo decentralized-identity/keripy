@@ -6,19 +6,16 @@ keri.kli.commands module
 import argparse
 import os
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.db import dbing, basing
-from keri.base import keeping
 from hio.base import doing
-from hio.core.tcp import clienting
 from hio.core import wiring
+from hio.core.tcp import clienting
 
-from keri import help
-from keri.base import keeping, directing, indirecting
-from keri.base.basing import Habitat
-from keri.db import dbing
-from keri.kli.common.config import loadConfig
+from ... import help
+from ...app import keeping, directing
+from ...app.habbing import Habitat
+from ...db import basing
+from ...db import dbing
+from ..common.config import loadConfig
 
 logger = help.ogler.getLogger()
 

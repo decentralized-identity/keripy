@@ -1,4 +1,4 @@
-    # -*- encoding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 """
 KERI
 keri.kli.witness module
@@ -8,9 +8,9 @@ Witness command line interface
 import argparse
 import logging
 
-from keri import __version__
-from keri import help  # logger support
-from keri.app import directing, indirecting
+from ... import __version__
+from ... import help
+from ...app import directing, indirecting
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -l 5621 --e 10.0\n"
