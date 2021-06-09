@@ -99,7 +99,6 @@ class Indirector(doing.DoDoer):
 
     """
 
-
     def __init__(self, hab, client, direct=True, doers=None, **kwa):
         """
         Initialize instance.
@@ -125,8 +124,8 @@ class Indirector(doing.DoDoer):
                                       cloned=not self.direct,
                                       direct=self.direct)
         self.parser = parsing.Parser(ims=self.client.rxbs,
-                                      framed=True,
-                                      kvy=self.kevery)
+                                     framed=True,
+                                     kvy=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.escrowDo])
         if self.direct:
@@ -135,7 +134,6 @@ class Indirector(doing.DoDoer):
         super(Indirector, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.client.wind(self.tymth)
-
 
     def wind(self, tymth):
         """

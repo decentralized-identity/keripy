@@ -12,6 +12,7 @@ from urllib import parse
 
 from hio.base import doing
 from hio.core import wiring
+from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
 from .. import kering
@@ -243,7 +244,6 @@ class SamDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -289,13 +289,13 @@ class IanDirector(directing.Director):
             associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
-    def __init__(self, vcfile, recipientIdentifier, lei, hab, issuer, client, **kwa):
+    def __init__(self, vcfile, recipientIdentifier, lei, hab, issuer, client, console=None, **kwa):
         super().__init__(hab, client, **kwa)
         self.issuer = issuer
         self.vcfile=vcfile
         self.recipientIdentifier = recipientIdentifier
         self.lei = lei
-
+        self.console = console if console is not None else serialing.Console()
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -391,15 +391,32 @@ class IanDirector(directing.Director):
             with open(self.vcfile, "w") as f:
                 f.write(json.dumps(cred, indent=4))
 
-
             logger.info("%s:\n\n\n Wrote Verifiable Credential for LEI: %s to file %s.\n\n",
                         self.hab.pre, self.lei, self.vcfile)
 
+            self.console.reopen()
+            while self.console.get().decode('utf-8') != "r":
+                (yield self.tock)
 
-        except GeneratorExit:  # close context, forced exit due to .close
+            tevt, kevt = self.issuer.revoke(vcdig=vcdig.qb64)
+            logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s\n\n",
+                        self.hab.pre, self.lei)
+            (yield self.tock)
+
+            self.client.tx(kevt)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
+            (yield self.tock)
+
+            self.client.tx(tevt)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
+            (yield self.tock)
+
+        except GeneratorExit as ge:  # close context, forced exit due to .close
+            logger.error("Exception", ge)
             pass
 
-        except Exception:  # abort context, forced exit due to uncaught exception
+        except Exception as e:  # abort context, forced exit due to uncaught exception
+            logger.error("Exception", e)
             raise
 
         finally:  # exit context,  unforced exit due to normal exit of try
@@ -450,7 +467,6 @@ class VicDirector(directing.Director):
         super().__init__(hab, client, **kwa)
         self.vcfile=vcfile
         self.verifier = verifier
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -511,7 +527,7 @@ class VicDirector(directing.Director):
                                 self.hab.pre, regk)
                     tyme = (yield (self.tock))
 
-
+                tyme = (yield (self.tock))
                 sidx = int(url.fragment)
 
                 valid = self.verifier.verify(pre=pre,
@@ -526,12 +542,8 @@ class VicDirector(directing.Director):
                     logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
                                 self.hab.pre, sub["lei"])
                 else:
-                    logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
+                    logger.error("%s:\n\n\n Revoked vLEI credential.\n\n",
                                  self.hab.pre)
-
-
-
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
