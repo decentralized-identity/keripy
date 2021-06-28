@@ -1568,7 +1568,7 @@ class Diger(Matter):
     def _sha3_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
+        Verifiy sha3_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
@@ -1580,7 +1580,7 @@ class Diger(Matter):
     def _sha2_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches raw
+        Verifiy sha2_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
