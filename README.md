@@ -1,4 +1,6 @@
-# Python Implementation of the KERI Core Libraries
+# The KERI Working Group is no longer active under DIF. Ongoing KERI work has moved to the [Web of Trust GitHub repository](https://github.com/WebOfTrust/keri).
+
+# Python Implementation of the KERI Core Libraries (archived at DIF)
 
 Project Name:  keripy
 
